@@ -72,7 +72,6 @@ def redrawGameWindow():
     player.draw(win)
     pygame.display.update()
 
-
 player = Player()
 run = True
 while run:
