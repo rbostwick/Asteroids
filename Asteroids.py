@@ -23,7 +23,7 @@ clock = pygame.time.Clock()
 gameover = False
 lives = 3
 score = 0
-
+rapidFire = False
 
 class Player(object):
     def __init__(self):
@@ -105,6 +105,7 @@ class Bullet(object):
         if self.x < -50 or self.x > sw or self.y > sh or self.y < -50:
             return True
 
+
 class Asteroid(object):
     def __init__(self, rank):
         self.rank = rank
@@ -116,13 +117,14 @@ class Asteroid(object):
             self.image = asteroid150
         self.w = 50 * rank
         self.h = 50 * rank
-        self.ranPoint = random.choice([(random.randrange(0, sw-self.w), random.choice([-1*self.h - 5, sh + 5])), (random.choice([-1*self.w - 5, sw + 5]), random.randrange(0, sh - self.h))])
+        self.ranPoint = random.choice([(random.randrange(0, sw - self.w), random.choice([-1 * self.h - 5, sh + 5])),
+                                       (random.choice([-1 * self.w - 5, sw + 5]), random.randrange(0, sh - self.h))])
         self.x, self.y = self.ranPoint
-        if self.x < sw//2:
+        if self.x < sw // 2:
             self.xdir = 1
         else:
             self.xdir = -1
-        if self.y < sh//2:
+        if self.y < sh // 2:
             self.ydir = 1
         else:
             self.ydir = -1
@@ -132,6 +134,27 @@ class Asteroid(object):
     def draw(self, win):
         win.blit(self.image, (self.x, self.y))
 
+class Star(object):
+    def __init__(self):
+        self.img = star
+        self.w = self.img.get_width()
+        self.h = self.img.get_height()
+        self.ranPoint = random.choice([(random.randrange(0, sw - self.w), random.choice([-1 * self.h - 5, sh + 5])),
+                                       (random.choice([-1 * self.w - 5, sw + 5]), random.randrange(0, sh - self.h))])
+        self.x, self.y = self.ranPoint
+        if self.x < sw//2:
+            self.xdir = 1
+        else:
+            self.xdir = -1
+        if self.y < sh//2:
+            self.ydir = 1
+        else:
+            self.ydir = -1
+        self.xv = self.xdir * 2
+        self.yv = self.ydir * 2
+
+    def draw(self, win):
+        win.blit(self.img, (self.x, self.y))
 def redrawGameWindow():
     win.blit(bg, (0, 0))
     font = pygame.font.SysFont('arial', 30)
@@ -143,6 +166,8 @@ def redrawGameWindow():
         a.draw(win)
     for b in playerBullets:
         b.draw(win)
+    for s in stars:
+        s.draw(win)
 
     if gameover:
         win.blit(playAgainText, (sw // 2 - playAgainText.get_width() // 2, sh // 2 - playAgainText.get_height() // 2))
@@ -155,6 +180,7 @@ player = Player()
 playerBullets = []
 asteroids = []
 count = 0
+stars = []
 run = True
 while run:
     clock.tick(60)
@@ -163,6 +189,8 @@ while run:
         if count % 50 == 0:
             ran = random.choice([1, 1, 1, 2, 2, 3])
             asteroids.append(Asteroid(ran))
+        if count % 1000 == 0:
+            stars.append(Star())
         player.updateLocation()
         for b in playerBullets:
             b.move()
