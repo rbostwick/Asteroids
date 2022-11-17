@@ -24,6 +24,7 @@ gameover = False
 lives = 3
 score = 0
 rapidFire = False
+rfStart = -1
 
 class Player(object):
     def __init__(self):
@@ -161,6 +162,7 @@ def redrawGameWindow():
     livesText = font.render('Lives: ' + str(lives), 1, (255, 255, 255))
     playAgainText = font.render('Press Space to Play Again', 1, (255, 255, 255))
     scoreText = font.render('Score: ' + str(score), 1, (255, 255, 255))
+
     player.draw(win)
     for a in asteroids:
         a.draw(win)
@@ -168,6 +170,10 @@ def redrawGameWindow():
         b.draw(win)
     for s in stars:
         s.draw(win)
+
+    if rapidFire:
+        pygame.draw.rect(win, (0, 0, 0), [sw//2 - 51, 19, 102, 22])
+        pygame.draw.rect(win, (255, 255, 255), [sw//2 - 50, 20, 100 - 100*(count - rfStart)/500, 20])
 
     if gameover:
         win.blit(playAgainText, (sw // 2 - playAgainText.get_width() // 2, sh // 2 - playAgainText.get_height() // 2))
@@ -180,7 +186,7 @@ player = Player()
 playerBullets = []
 asteroids = []
 count = 0
-stars = []
+stars = [Star()]
 run = True
 while run:
     clock.tick(60)
@@ -238,9 +244,28 @@ while run:
                         asteroids.pop(asteroids.index(a))
                         playerBullets.pop(playerBullets.index(b))
                         break
+        for s in stars:
+            s.x += s.xv
+            s.y += s.yv
+            if s.x < -100 - s.w or s.x > sw + 100 or s.y > sh + 100 or s.y < -100 - s.h:
+                stars.pop(stars.index(s))
+                break
+            for b in playerBullets:
+                if (b.x >= s.x and b.x <= s.x + s.w) or b.x + b.w >= s.x and b.x + b.w <= s.x + s.w:
+                    if (b.y >= s.y and b.y <= s.y + s.h) or b.y + b.h >= s.y and b.y + b.h <= s.y + s.h:
+                        rapidFire = True
+                        rfStart = count
+                        stars.pop(stars.index(s))
+                        playerBullets.pop(playerBullets.index(b))
+                        break
 
         if lives <= 0:
             gameover = True
+
+        if rfStart != -1:
+            if count - rfStart > 500:
+                rapidFire = False
+                rfStart = -1
 
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT]:
@@ -249,6 +274,9 @@ while run:
             player.turnRight()
         if keys[pygame.K_UP]:
             player.moveForward()
+        if keys[pygame.K_SPACE]:
+            if rapidFire:
+                playerBullets.append(Bullet())
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -256,7 +284,8 @@ while run:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
                 if not gameover:
-                    playerBullets.append(Bullet())
+                    if not rapidFire:
+                        playerBullets.append(Bullet())
                 else:
                     gameover = False
                     lives = 3
