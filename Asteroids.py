@@ -156,6 +156,45 @@ class Star(object):
 
     def draw(self, win):
         win.blit(self.img, (self.x, self.y))
+
+class Alien(object):
+    def __init__(self):
+        self.img = alienImg
+        self.w = self.img.get_width()
+        self.h = self.img.get_height()
+        self.ranPoint = random.choice([(random.randrange(0, sw - self.w), random.choice([-1 * self.h - 5, sh + 5])),
+                                       (random.choice([-1 * self.w - 5, sw + 5]), random.randrange(0, sh - self.h))])
+        self.x, self.y = self.ranPoint
+        if self.x < sw//2:
+            self.xdir = 1
+        else:
+            self.xdir = -1
+        if self.y < sh//2:
+            self.ydir = 1
+        else:
+            self.ydir = -1
+        self.xv = self.xdir * 2
+        self.yv = self.ydir * 2
+
+    def draw(self, win):
+        win.blit(self.img, (self.x, self.y))
+
+class AlienBullet(object):
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.w = 4
+        self.h = 4
+        self.dx, self.dy = player.x - self.x, player.y - self.y
+        self.dist = math.hypot(self.dx, self.dy)
+        self.dx, self.dy = self.dx / self.dist, self.dy / self.dist
+        self.xv = self.dx * 5
+        self.yv = self.dy * 5
+
+    def draw(self, win):
+        pygame.draw.rect(win, (255, 255, 255), [self.x, self.y, self.w, self.h])
+
+
 def redrawGameWindow():
     win.blit(bg, (0, 0))
     font = pygame.font.SysFont('arial', 30)
@@ -170,6 +209,10 @@ def redrawGameWindow():
         b.draw(win)
     for s in stars:
         s.draw(win)
+    for a in aliens:
+        a.draw(win)
+    for b in alienBullets:
+        b.draw(win)
 
     if rapidFire:
         pygame.draw.rect(win, (0, 0, 0), [sw//2 - 51, 19, 102, 22])
@@ -187,6 +230,8 @@ playerBullets = []
 asteroids = []
 count = 0
 stars = [Star()]
+aliens = [Alien()]
+alienBullets = []
 run = True
 while run:
     clock.tick(60)
@@ -197,6 +242,38 @@ while run:
             asteroids.append(Asteroid(ran))
         if count % 1000 == 0:
             stars.append(Star())
+        if count % 750 == 0:
+            aliens.append(Alien())
+        for i, a in enumerate(aliens):
+            a.x += a.xv
+            a.y += a.yv
+            if a.x > sw + 150 or a.x + a.w < -100 or a.y > sh + 150 or a.y + a.h < -100:
+                aliens.pop(i)
+            if count % 60 == 0:
+                alienBullets.append(AlienBullet(a.x + a.w // 2, a.y + a.h // 2))
+
+        for b in playerBullets:
+            if (b.x >= a.x and b.x <= a.x + a.w) or b.x + b.w >= a.x and b.x + b.w <= a.x + a.w:
+                if (b.y >= a.y and b.y <= a.y + a.h) or b.y + b.h >= a.y and b.y + b.h <= a.y + a.h:
+                    aliens.pop(i)
+                    score += 50
+                    break
+
+        for i, b in enumerate(alienBullets):
+            b.x += b.xv
+            b.y += b.yv
+            if (b.x >= player.x - player.w // 2 and b.x <= player.x + player.w // 2) or b.x + b.w >= player.x - player.w // 2 and b.x + b.w <= player.x + player.w // 2:
+                if (b.y >= player.y - player.h // 2 and b.y <= player.y + player.h // 2) or b.y + b.h >= player.y - player.h // 2 and b.y + b.h <= player.y + player.h // 2:
+                    lives -= 1
+                    alienBullets.pop(i)
+                    break
+
+        player.updateLocation()
+        for b in playerBullets:
+            b.move()
+            if b.checkOffScreen():
+                playerBullets.pop(playerBullets.index(b))
+
         player.updateLocation()
         for b in playerBullets:
             b.move()
@@ -291,6 +368,9 @@ while run:
                     lives = 3
                     score = 0
                     asteroids.clear()
+                    aliens.clear()
+                    alienBullets.clear()
+                    stars.clear()
 
     redrawGameWindow()
 pygame.quit()
